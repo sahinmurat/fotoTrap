@@ -1,0 +1,110 @@
+#$DOCKER_REPO_USERNAME, $DOCKER_REPO_PASSWORD, $DOCKER_REPO_URL, and $NPM_TOKEN are workspace variables
+# $IMAGE_NAME is a repository variable
+
+image: atlassian/default-image:4
+
+definitions:
+  #  services:
+  #    docker:
+  #      memory: 4096
+
+  steps:
+    - step: &runTests
+        image: node:18
+        name: Run tests
+        script:
+          - npm ci
+          - npm test
+        caches:
+          - node
+
+    # set version tag to version from package.json plus bitbucket build number
+    # set target docker registry to docker prod registry
+    - step: &getTagVersion
+        name: Create version number for tag
+        script:
+          - VERSION=$(node -p -e "require('./package.json').version")
+          - echo "export RTAG=${VERSION}-${BITBUCKET_BUILD_NUMBER}" > vars.sh
+          - echo "export DOCKER_TARGET=${DOCKER_REPO_URL}" >> vars.sh
+        artifacts:
+          - vars.sh
+
+    # set version tag to version from package.json plus bitbucket build number
+    # set target docker registry to docker develop registry
+    - step: &getReleaseCandidateTagVersion
+        name: Create version number for tag
+        script:
+          - VERSION=$(node -p -e "require('./package.json').version")
+          - echo "export RTAG=${VERSION}-RC${BITBUCKET_BUILD_NUMBER}" > vars.sh
+          - echo "export DOCKER_TARGET=${DOCKER_DEV_REPO_URL}" >> vars.sh
+        artifacts:
+          - vars.sh
+
+    # set version tag to develop-latest
+    # set target docker registry to docker develop registry
+    - step: &getDevelopTag
+        name: Create version number for tag
+        script:
+          - VERSION=develop-latest
+          - echo "export RTAG=${VERSION}" > vars.sh
+          - echo "export DOCKER_TARGET=${DOCKER_DEV_REPO_URL}" >> vars.sh
+        artifacts:
+          - vars.sh
+
+    # Build, scan and publish Docker image
+    - step: &buildDockerImage
+        name: Build and publish Docker Image
+        #        size: 2x
+        services:
+          - docker
+        script:
+          - source vars.sh
+          - IMAGE=${DOCKER_TARGET}/hackathon/team3-backend:${RTAG}
+          - echo "{\"version\":\"${RTAG}\"}" > ./src/version.json
+          - echo ${DOCKER_REPO_PASSWORD} | docker login --username "$DOCKER_REPO_USERNAME" --password-stdin $DOCKER_TARGET
+          - docker build . --file Dockerfile --tag "${IMAGE}" --build-arg="NPM_TOKEN=${NPM_TOKEN}" --no-cache=true
+          - pipe: aquasecurity/trivy-pipe:1.0.0
+            variables:
+              imageRef: ${IMAGE}
+              format: "table"
+              exitCode: "1"
+              ignoreUnfixed: "true"
+              vulnType: "os,library"
+              severity: "CRITICAL,HIGH,UNKNOWN"
+          - docker push "${IMAGE}"
+          - echo "Uploaded docker image ${IMAGE}"
+
+pipelines:
+  branches:
+    "pre-release":
+      - step: *runTests
+      - step: *getReleaseCandidateTagVersion
+      - step: *buildDockerImage
+      - step:
+          name: Finish deployment
+          deployment: staging
+          script:
+            - echo "staging deployment finished"
+
+    "master":
+      #      - step: *runTests # disabled because test should have be executed in pre-release
+      - step: *getTagVersion
+      - step: *buildDockerImage
+      - step:
+          name: Finish deployment
+          deployment: production
+          script:
+            - echo "production deployment finished"
+
+  # develop branch is not started automatically
+  # to start automatically, move develop from "custom" to "branches"
+  custom:
+    "develop":
+      #      - step: *runTests # disabled because there are no tests yet
+      - step: *getDevelopTag
+      - step: *buildDockerImage
+      - step:
+          name: Finish deployment
+          deployment: test
+          script:
+            - echo "test deployment finished"
