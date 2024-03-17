@@ -1,6 +1,6 @@
 export enum ComponentType {
-  ANIMAL = 'ANIMAL',
-  HUMAN = 'HUMAN',
-  PLANET = 'PLANET',
-  OTHER = 'OTHER',
+  ANIMAL = 'animal',
+  HUMAN = 'human',
+  PLANT = 'plant',
+  OTHER = 'other',
 }
