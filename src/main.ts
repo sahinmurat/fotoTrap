@@ -19,7 +19,7 @@ async function bootstrap() {
   // ****************Swagger****************
   const options = new DocumentBuilder()
     .setVersion(version.version)
-    .setTitle('Asset Bag Team 3')
+    .setTitle('Foto Trap Test Api')
     .addBearerAuth()
     .build();
   const document = SwaggerModule.createDocument(app, options);

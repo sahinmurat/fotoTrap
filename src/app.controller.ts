@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Post, Request, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiBody, ApiResponse } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AppService } from './app.service';
 import { AuthGuard } from './auth/auth.guard';
 import { ComponentDto } from './dto/component.dto';
@@ -14,6 +14,7 @@ export class AppController {
   ) { }
 
   @UseGuards(AuthGuard)
+  @ApiTags('Endpoints')
   @Post('create-component')
   @ApiResponse({ status: 201, type: Component })
   @ApiResponse({ status: 401, type: UnauthorizedResponse })
@@ -24,6 +25,7 @@ export class AppController {
   }
 
   @UseGuards(AuthGuard)
+  @ApiTags('Endpoints')
   @Get('components')
   @ApiResponse({ status: 201, type: Component })
   @ApiResponse({ status: 401, type: UnauthorizedResponse })

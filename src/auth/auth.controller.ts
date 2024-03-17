@@ -1,5 +1,5 @@
 import { Body, Controller, Post, Req } from '@nestjs/common';
-import { ApiBody, ApiHeader, ApiResponse } from '@nestjs/swagger';
+import { ApiBody, ApiHeader, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { LoginDto } from '../dto/login.dto';
 import { UserDto } from '../dto/user.dto';
 import { IRefreshTokenResponse } from '../models/IRefreshTokenResponse';
@@ -11,6 +11,7 @@ import { AuthService } from './auth.service';
 export class AuthController {
     constructor(private readonly authService: AuthService) { }
 
+    @ApiTags('Authentication')
     @Post('login')
     @ApiResponse({ status: 201, type: ILoginResponse })
     @ApiResponse({ status: 401, type: UnauthorizedResponse })
@@ -20,6 +21,7 @@ export class AuthController {
         return await this.authService.login(data.email, data.password);
     }
 
+    @ApiTags('Authentication')
     @Post('register')
     @ApiResponse({ status: 201, type: ILoginResponse })
     @ApiResponse({ status: 401, type: UnauthorizedResponse })
@@ -29,6 +31,7 @@ export class AuthController {
         return await this.authService.register(data)
     }
 
+    @ApiTags('Authentication')
     @Post('refresh-token')
     @ApiResponse({ status: 201, type: IRefreshTokenResponse })
     @ApiResponse({ status: 401, type: UnauthorizedResponse })
