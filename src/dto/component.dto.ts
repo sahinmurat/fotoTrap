@@ -1,10 +1,15 @@
 import { ApiProperty } from "@nestjs/swagger"
-import { IsNotEmpty } from "class-validator"
+import { IsEnum, IsNotEmpty } from "class-validator"
 import { ComponentType } from "../models/component-type.enum"
 
 export class ComponentDto {
     @IsNotEmpty()
-    @ApiProperty()
+    @ApiProperty({
+        enum: ComponentType,
+        description: 'Type of component',
+        default: ComponentType.OTHER 
+      })
+    @IsEnum(ComponentType, { message: 'Invalid component type' })
     type: ComponentType
 
     @IsNotEmpty()
